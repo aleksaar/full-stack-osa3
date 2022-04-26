@@ -36,7 +36,7 @@ let persons = [
     ]
 
 app.get('/', (req, res) => {
-    res.send('<h1>Hello</h1>')
+    res.send('<h1>Hello</h1><p>Pages:<p/><ul><li>/info</li><li>/api/persons</li></ul>')
 })
 
 app.get('/api/persons', (req, res) => {
