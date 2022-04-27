@@ -17,6 +17,9 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === 'CastError') {
       return response.status(400).send({ error: 'malformatted id' })
     }
+    else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
   
     next(error)
 }
@@ -26,10 +29,6 @@ app.use(express.json())
 app.use(morgan('tiny2'))
 app.use(cors())
 
-
-// app.get('/', (req, res) => {
-//     res.send('<h1>Hello</h1><p>Pages:<p/><ul><li>/api/persons</li></ul>')
-// })
 
 app.get('/api/persons', (req, res) => {
     Person.find({}).then(persons => {
@@ -70,28 +69,18 @@ const generateId = () => {
     return Math.floor(Math.random() * (max - min) + min)
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
-
-    if (body.name === undefined || body.name === '') {
-      return response.status(400).send({ error: 'name missing' })
-    }
-    else if (body.number === undefined || body.number === '') {
-        return response.status(400).json({ 
-        error: 'number missing' 
-        })
-    }
 
     const person = new Person({
         name: body.name,
         number: body.number,
     })
 
-    console.log(person)
-
     person.save().then(savedPerson => {
         response.json(savedPerson)
     })
+    .catch(error => next(error))
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
@@ -102,7 +91,9 @@ app.put('/api/persons/:id', (request, response, next) => {
         number: body.number,
     })
   
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    Person.findByIdAndUpdate(request.params.id, person, 
+        { new: true, runValidators: true, context: 'query' }
+        )
       .then(updatedPerson => {
         response.json(updatedPerson)
       })
